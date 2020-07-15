@@ -33,13 +33,14 @@ namespace TechJobsPersistent.Controllers
         public IActionResult AddJob()
         {
             List<Employer> currentEmployers = context.Employers.ToList();
-            AddJobViewModel addJobViewModel = new AddJobViewModel(currentEmployers);
+            List<Skill> skills = context.Skills.ToList();
+            AddJobViewModel addJobViewModel = new AddJobViewModel(currentEmployers, skills);
             return View("AddJob", addJobViewModel);
         }
 
         [HttpPost]
         [Route("/Add")]
-        public IActionResult ProcessAddJobForm(AddJobViewModel addJobViewModel)
+        public IActionResult ProcessAddJobForm(AddJobViewModel addJobViewModel, string[] selectedSkills)
         {
             if (ModelState.IsValid)
             {
@@ -49,11 +50,32 @@ namespace TechJobsPersistent.Controllers
                     EmployerId = addJobViewModel.EmployerId
                 };
 
+                foreach (var skill in selectedSkills)
+                {
+                    JobSkill newJobSkill = new JobSkill();
+                    newJobSkill.Job = newJob;
+                    Skill newSkill = context.Skills.Find(int.Parse(skill));
+                    newJobSkill.Skill = newSkill;
+                    context.JobSkills.Add(newJobSkill);
+                }
+
                 context.Jobs.Add(newJob);
                 context.SaveChanges();
 
                 return Redirect("~/");
             }
+            List<Employer> currentEmployers = context.Employers.ToList();
+            addJobViewModel.Employers = new List<SelectListItem>();
+            foreach (var employer in currentEmployers)
+            {
+                addJobViewModel.Employers.Add(new SelectListItem
+                {
+                    Value = employer.Id.ToString(),
+                    Text = employer.Name
+                });
+            }
+            addJobViewModel.Skills = context.Skills.ToList();
+
             return View("AddJob", addJobViewModel);
         }
 
